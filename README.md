@@ -2,7 +2,7 @@
 A little project creating Snake in RUST using pancurses and basic standard libraries.
 
 
-### Prerequisites
+## Prerequisites
 
 What things you need to install the software and how to install them
 
@@ -14,13 +14,14 @@ cd into it
 cargo run
 ```
 
-### How to play
+## How to play
 
 I mean it's Snake :) 
 
-Controls:
+If you hit screen boundaries then it's Game Over 
 
-Move with w(up) a(left) s(down) d(right) , press and hold to get a temporary speed boost
-q is quit
+It's a smart snake so doesn't eat itself (feel free to add this if you like)...
 
-If you hit screen boundaries then the game over screen displays.  It's a smart snake so doesn't eat itself (feel free to add this if you like)...
+### Controls:
+*Move with w(up) a(left) s(down) d(right) , press and hold to get a temporary speed boost
+*q is quit
