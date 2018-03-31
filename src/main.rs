@@ -1,6 +1,8 @@
 extern crate pancurses;
+extern crate rand;
 
-use pancurses::{initscr, endwin, Input, noecho, Window};
+use pancurses::{initscr, endwin, Input, noecho, Window, resize_term, half_delay};
+use rand::{Rng, thread_rng};
 
 struct Point {
     x: i32,
@@ -22,28 +24,16 @@ struct Move {
     horizontal: i32,
 }
 
-static SPACE: char = ' ';
-static FOOD: char = '*';
-static BODY: char = 'o';
-static HEAD: char = 'c';
+static SPACE: &'static str = " ";
+static FOOD: &'static str = "*";
+static BODY: &'static str = "O";
+static HEAD: &'static str = "0";
+static BORDER: &'static str = "^";
+
+fn startGame(screen : &mut Screen, snake :&mut Snake, food :&mut Point){
 
 
-fn startGame(screen : &mut Screen, content :&mut Vec<String>, snake :&mut Snake){
-
-    //place first food
-    content.clear();
     
-    //generate board
-    let mut s = "                   \n".to_string();
-    content.push(s);
-    s = "                   \n".to_string();
-    content.push(s);
-    s = format!("{}{}{}{}{}{}{}{}\n",SPACE,BODY,BODY,BODY,HEAD,SPACE,SPACE,FOOD);
-    content.push(s);
-    s = "                   \n".to_string();
-    content.push(s);
-    s = "                   \n".to_string();
-    content.push(s);
 }
 
 fn addIntroToScreen(screen : &mut Screen, content :&mut Vec<String>){
@@ -82,37 +72,122 @@ fn addIntroToScreen(screen : &mut Screen, content :&mut Vec<String>){
     content.push(s);
 }
 
-
 //randomise food and iterate snake movement
-fn iterateScreen(screen :&mut Screen, content :&mut Vec<String>, key_in : char){
+fn iterateScreen(screen :&mut Screen, content :&mut Vec<String>, key_in : &String, snake : &mut Snake, food :&mut Point, direction :&mut Move) -> i32{
 
-    //check key to change direction
-
-    //if 
-    //loop through columns then rows
-
-    //make diff only changes
+    content.clear();
+    
     //loop through screen to generate
     for i in 0..screen.height {
 
-        let mut line: String = "".to_owned();
-        
+        let mut line = "".to_string();
+        let mut changed: bool = false;
         for j in 0..screen.width {
-            //line.push_str()
 
+            if  i==0 || j==0 || i==screen.height-1 || j==screen.width-1
+            {
+                line = line + &BORDER;
+                changed = true;
+            }
+            
+
+            if snake.head.y == i && snake.head.x == j {
+                line = line + &HEAD;
+                changed = true;
+            }
+
+            for p in 0..snake.body.len(){
+                if snake.body[p].y == i && snake.body[p].x == j {
+                    line = line + &BODY;
+                    changed = true;
+                    break;
+                }
+            }
+
+            if food.y == i && food.x == j {
+                line = line + &FOOD;
+                changed = true;
+            }
+
+            if !changed {
+                line = line + &SPACE;
+            }
+
+            changed = false;
         }
+        content.push(line);
     }
 
-    //place food
-
-    //check food eaten
-
-    //grow snake if needed
+    //check key to change direction
+    if(key_in == "s"){
+        direction.vertical = 1;
+        direction.horizontal = 0;
+    }
+    if(key_in == "w"){
+        direction.vertical = -1;
+        direction.horizontal = 0;
+    }
+    if(key_in == "d"){
+        direction.vertical = 0;
+        direction.horizontal = 1;
+    }
+    if(key_in == "a"){
+        direction.vertical = 0;
+        direction.horizontal = -1;
+    }
 
     //move snake
+    let mut prev_head = Point{ x: snake.head.x, y: snake.head.y};
+    if direction.vertical != 0{
+        snake.head.y = snake.head.y+direction.vertical;
+    }
+    if direction.horizontal != 0{        
+        snake.head.x = snake.head.x+direction.horizontal;
+    }
+    
+    for idx in 0..snake.body.len() {
+            let tmp = Point{ x: snake.body[idx].x, y: snake.body[idx].y };
+            snake.body[idx] = Point{x: prev_head.x, y: prev_head.y};
+            prev_head = tmp;
+    }
+
+    //check food eaten
+    if food.x == snake.head.x && food.y == snake.head.y{
+        //grow snake
+        snake.body.push(Point{x:prev_head.x, y:prev_head.y});
+
+        let mut rng = rand::thread_rng();
+        food.x = rng.gen_range(2, screen.width-1);
+        food.y = rng.gen_range(2, screen.height-1);
+    }
+
+    if snake.head.x < 1 || 
+    (snake.head.x > screen.width-2) || 
+    snake.head.y < 1 || 
+    (snake.head.y > screen.height-2) {
+        gameOver(content, snake);
+        return 0;
+    }
+
+    return 1;
 
 }
 
+fn gameOver(content: &mut Vec<String>, snake: &Snake){
+
+    content.clear();
+
+    let mut s = "\n\n\n".to_string();
+    content.push(s);
+    content.push("  ___|    \\     \\  | ____|   _\\ \\     / ____|  _ \\  \n".to_string());
+    content.push(" |       _ \\   |\\/ | __|    |   |\\ \\   /  __|   |   | \n".to_string());
+    content.push(" |   |  ___ \\  |   | |      |   | \\ \\ /   |     __ <  \n".to_string());
+    content.push("\\____|_/    _\\_|  _|_____| \\___/   \\_/   _____|_| \\_\\ \n".to_string());
+    content.push("\n\n\n".to_string());
+
+    content.push(format!("You scored: {} points!!\n",snake.body.len()));
+    content.push("\n\n\n q to quit \n\n\n".to_string());
+}
 
 fn drawScreen(content :&mut Vec<String>, window :&Window){
 
@@ -130,24 +205,32 @@ fn main() {
     let mut gameRunning: bool = false;
     let mut content = Vec::new();
     
-    let mut foodLocation = Point { x: 50, y: 50 };
-    let mut sc = Screen{ height : 100, width : 100, };
-
+    //defaults
+    let mut sc = Screen{ height : 40, width : 80};
+    let mut food = Point { x: 25, y: 25 };
     let mut body_snake = Vec::new();
-    body_snake.push(Point {x: 39, y: 40});
-    let mut snake = Snake { head: Point { x: 40, y: 40 }, body: body_snake };
+    let first_bodypart = Point {x: 20, y: 20};
+    body_snake.push(first_bodypart);
+    let mut snake = Snake { head: Point { x: 21, y: 20 }, body: body_snake };
+    let mut lastKey = "".to_string();
+    let mut direction = Move{vertical: 0, horizontal: 1};
 
     let window = initscr();
-    
+    resize_term(sc.height, sc.width);
     window.refresh();
     noecho();
+    half_delay(1);
     
     addIntroToScreen(&mut sc, &mut content);
-    drawScreen(&mut content, &window);
-
+    
     loop {
+
+        drawScreen(&mut content, &window);
+
         match window.getch() {
             Some(Input::Character(keyin)) => {
+
+                lastKey = keyin.to_string();
 
                 //quit game
                 if keyin == 'q' {
@@ -158,15 +241,19 @@ fn main() {
                 //start game
                 if keyin == 'p' && gameRunning == false {
                     gameRunning = true;
-                    startGame(&mut sc, &mut content, &mut snake);
+                    startGame(&mut sc, &mut snake, &mut food);
                 }
 
-                iterateScreen(&mut sc, &mut content, keyin);
-                drawScreen(&mut content, &window);
             },
             _ => (),
         }
-
+        if gameRunning {
+            let ret = iterateScreen(&mut sc, &mut content, &lastKey, &mut snake, &mut food, &mut direction);
+            drawScreen(&mut content, &window);
+            if(ret == 0){
+                gameRunning = false;
+            }
+        }
     }
     endwin();
 }

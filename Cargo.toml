@@ -5,3 +5,4 @@ authors = ["Aran"]
 
 [dependencies]
 pancurses = "0.15"
+rand = "0.5.0-pre.0"
