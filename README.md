@@ -23,5 +23,6 @@ If you hit screen boundaries then it's Game Over
 It's a smart snake so doesn't eat itself (feel free to add this if you like)...
 
 ### Controls:
-*Move with w(up) a(left) s(down) d(right) , press and hold to get a temporary speed boost
-*q is quit
+Move with w(up) a(left) s(down) d(right) , press and hold to get a temporary speed boost
+
+q is quit
