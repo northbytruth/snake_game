@@ -157,14 +157,14 @@ fn iterateScreen(screen :&mut Screen, content :&mut Vec<String>, key_in : &Strin
         snake.body.push(Point{x:prev_head.x, y:prev_head.y});
 
         let mut rng = rand::thread_rng();
-        food.x = rng.gen_range(2, screen.width-1);
-        food.y = rng.gen_range(2, screen.height-1);
+        food.x = rng.gen_range(2, screen.width-2);
+        food.y = rng.gen_range(2, screen.height-2);
     }
 
     if snake.head.x < 1 || 
-    (snake.head.x > screen.width-2) || 
+    (snake.head.x > screen.width-1) || 
     snake.head.y < 1 || 
-    (snake.head.y > screen.height-2) {
+    (snake.head.y > screen.height-1) {
         gameOver(content, snake);
         return 0;
     }
